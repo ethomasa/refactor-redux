@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
+import { useDispatch, useSelector } from 'react-redux';
 
 import Cart from '../components/Cart';
-import { useStoreContext } from '../utils/GlobalState';
+
 import {
   REMOVE_FROM_CART,
   UPDATE_CART_QUANTITY,
@@ -15,15 +16,14 @@ import { idbPromise } from '../utils/helpers';
 import spinner from '../assets/spinner.gif';
 
 function Detail() {
-  const [state, dispatch] = useStoreContext();
+  const dispatch = useDispatch();
+  const state = useSelector(state => state);
   const { id } = useParams();
-
   const [currentProduct, setCurrentProduct] = useState({});
-
+  const { products, cart } = state;
   const { loading, data } = useQuery(QUERY_PRODUCTS);
 
-  const { products, cart } = state;
-
+  // if data, loading, or dispatch is updated, update products
   useEffect(() => {
     // already in global store
     if (products.length) {
@@ -51,6 +51,7 @@ function Detail() {
     }
   }, [products, data, loading, dispatch, id]);
 
+  // update cart quantity if itemInCart exists; otherwise add to cart 
   const addToCart = () => {
     const itemInCart = cart.find((cartItem) => cartItem._id === id);
     if (itemInCart) {
@@ -72,15 +73,14 @@ function Detail() {
     }
   };
 
+  // remove item with currentProduct._id from cart
   const removeFromCart = () => {
     dispatch({
       type: REMOVE_FROM_CART,
       _id: currentProduct._id,
     });
-
     idbPromise('cart', 'delete', { ...currentProduct });
   };
-
   return (
     <>
       {currentProduct && cart ? (
